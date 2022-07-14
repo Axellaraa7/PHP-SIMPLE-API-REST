@@ -25,9 +25,9 @@ class Tabla{
   }
 
   public function getById($id){
-    $results = $this->conexion->query($this->selectNoId."order by id;");
-    $result = $results->fetchAll(PDO::FETCH_ASSOC)[$id];
-    return (isset($result)) ? json_encode($result) : null;
+    $results = $this->conexion->query($this->selectNoId."order by id;")->fetchAll(PDO::FETCH_ASSOC);
+    $inArray = array_key_exists($id,$results);
+    return (!$results || !$inArray) ? null : json_encode($results[$id]);
   }
 
   public function getByMarca($marca){
@@ -54,12 +54,26 @@ class Tabla{
     return $results;
   }
 
+  public function update($id,$marca,$tipo_prenda,$anio){
+    $id = $this->changeIdToPK($id);
+    if(!$id) return null; 
+    $query = $this->conexion->prepare("UPDATE $this->table SET marca = :marca, tipo_prenda = :tipoPrenda, anio = :anio WHERE id = :id");
+    $results = $query->execute(array(":marca"=>$marca, ":tipoPrenda"=>$tipo_prenda, ":anio"=>$anio, ":id"=>$id));
+    return $results;
+  }
+
   public function delete($id){
-    $results = in_array($id,$this->conexion->query("SELECT id FROM $this->table order by id")->fetchAll(PDO::FETCH_ASSOC));
-    if(!$results) return null;
-    return json_encode($results[$id]);
-    // $query = $this->conexion->prepare("DELETE FROM $this->table WHERE id = :id");
-    // $banExec = $query->execute()
+    $id = $this->changeIdToPK($id);
+    if(!$id) return null;
+    $query = $this->conexion->prepare("DELETE FROM $this->table WHERE id = :id");
+    $banExec = $query->execute(array(":id"=>$id));
+    return $banExec;
+  }
+
+  private function changeIdToPK($id){
+    $results = $this->conexion->query("SELECT id FROM $this->table order by id")->fetchAll(PDO::FETCH_ASSOC);
+    $inArray = array_key_exists($id,$results);
+    return (!$results || !$inArray) ? null : $results[$id]["id"];
   }
 }
 ?>
